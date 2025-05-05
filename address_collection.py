@@ -1,6 +1,7 @@
 import requests
 import json
 import threading
+import os
 """
 Created by: Shaman Blackout
 Created on 05-0405-2025
@@ -14,6 +15,7 @@ ORDER_BY = ("id", "address", "address_name")
 ORDER_DIRECTION = ("asc", "desc")
 VALIDATOR_KIND = ["Invalid", "Primary", "Secondary", "Proposed"]
 SHOW_ALL = ('0', '1') # used for with_storage, with_stakes, with_balance, with_total , 0 for false, 1 for true
+FOLDER = os.getcwd() +"/AddressCollection/"  # folder to save the json files
 
 
 url = "https://api-explorer.phantasma.info/api/v1/addresses?ORDER_BY="+ORDER_BY[0] +\
@@ -21,6 +23,22 @@ url = "https://api-explorer.phantasma.info/api/v1/addresses?ORDER_BY="+ORDER_BY[
     "&with_storage="+SHOW_ALL[0]+"&with_stakes="+SHOW_ALL[1] + \
     "&with_balance="+SHOW_ALL[1]+"&with_total="+SHOW_ALL[1]
 
+def check_and_create_directory():
+    """
+    Checks if a directory exists and creates it if it doesn't.
+
+    Args:
+        directory_path (str): The path to the directory.
+    """
+    if not os.path.exists(FOLDER):
+        try:
+            os.makedirs(FOLDER)  # Use makedirs to create parent directories as needed
+            print(f"Directory '{FOLDER}' created successfully.")
+        except OSError as e:
+            print(f"Error creating directory '{FOLDER}': {e}")
+    else:
+        print(f"Directory '{FOLDER}' already exists.")
+        
 
 def mastersCount(data):
     """
@@ -42,7 +60,7 @@ def mastersCount(data):
         "stake_masters": stake_masters
     }
     if stake_masters:
-        with open("stakeMasters.json", "w") as f:
+        with open(FOLDER+"stakeMasters.json", "w") as f:
             # Save with indentation for readability)
             json.dump(stake_masters_count, f, indent=4)
     print("Successfully fetched and saved data to stakeMasters.json")
@@ -70,7 +88,7 @@ def SoulBalances(data):
                 "address": item['address'],
                 "balance": float(item['stake'])})
     if soul_balances:
-        with open("soulBalances.json", "w") as f:
+        with open(FOLDER+"soulBalances.json", "w") as f:
             # Save with indentation for readability)
             json.dump(sorted(soul_balances, key=lambda x: x["balance"])[
                       ::-1], f, indent=4)
@@ -96,7 +114,7 @@ def fetch_and_save_address_collection(url, validator):
             t1.start()
             t2.start() 
 
-        with open("addressCollection_"+validator+".json", "w") as f:
+        with open(FOLDER+"addressCollection_"+validator+".json", "w") as f:
             # Save with indentation for readability
             json.dump(data, f, indent=4)
 
@@ -116,5 +134,6 @@ def update_all():
 
 
 if __name__ == "__main__":
+    check_and_create_directory()
     for validator in VALIDATOR_KIND:
         fetch_and_save_address_collection(url, validator)
