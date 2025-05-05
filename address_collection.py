@@ -38,7 +38,7 @@ def check_and_create_directory():
             print(f"Error creating directory '{FOLDER}': {e}")
     else:
         print(f"Directory '{FOLDER}' already exists.")
-        
+
 
 def mastersCount(data):
     """
@@ -103,8 +103,8 @@ def fetch_and_save_address_collection(url, validator):
         url (str): The URL to fetch the JSON data from.
     """
     try:
-        url = url + "&VALIDATOR_KIND=" + validator
-        response = requests.get(url)
+        temp_url = url + "&VALIDATOR_KIND=" + validator
+        response = requests.get(temp_url)
         response.raise_for_status()  # Raise HTTPError for bad responses (4xx or 5xx)
 
         data = response.json()
