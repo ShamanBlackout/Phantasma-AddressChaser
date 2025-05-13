@@ -81,6 +81,7 @@ def get_transaction_details(hash):
 def get_and_store_all_address_transaction():
     """
     Fetches all address transactions from the Phantasma API and stores them in a JSON file.
+    Only fetches the transactions that are of kind "TokenSend".
     """
 
     #Check if the directory exists, if not create it
