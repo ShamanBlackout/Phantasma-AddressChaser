@@ -97,8 +97,15 @@ def get_and_store_all_address_transaction():
             if count:
                 transactions = get_transactions(x["address"],count) if count else None
                 if transactions:
+                    #Only need to get the transaction hashes that
+                    filtered_transactions = {
+                        "address": x["address"],
+                        "transactionCount": count,
+                        "hash": [x["hash"] for x in transactions for i in x["events"] if i["kind"] == "TokenSend"],
+                    }
+
                     with open(os.getcwd()+f"/AddressTransactions/{x['address']}.json", "w") as outfile:
-                        json.dump(transactions, outfile, indent=4)
+                        json.dump(filtered_transactions, outfile, indent=4)
                     print(f"Transactions for {x['address']} updated in {x['address']}.json")
                 else:
                     print(f"No transactions found for {x['address']}")
