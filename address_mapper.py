@@ -2,6 +2,7 @@ import os
 import requests
 import json
 import time
+import math
 import snippets
 
 # Constants
@@ -50,7 +51,7 @@ def update_address_map(address_mappper,tokenSend,tokenReceive,amount,timestamp):
         address_mappper[tokenReceive][tokenSend]["received"] += amount
         address_mappper[tokenReceive][tokenSend]["receivedTimeStamp"].append(timestamp) 
 
-    print(f"Updated address mapper: {address_mappper[tokenSend]}")
+    print(f"Updated address mapper: {address_mappper[tokenSend]}\n")
     return address_mappper
 
 def save_progress(hash, address_mapper):
@@ -87,10 +88,12 @@ def load_progress():
         return address_mapper, last_hash
     except FileNotFoundError:
         print("No progress file found.")
-        return {}
+        return {},0
     except json.JSONDecodeError as e:
         print(f"Error decoding JSON from progress file: {e}")
-        return {}
+        return {},0
+
+
 
 def retrieve_last_line(file_path):
     """
@@ -107,7 +110,6 @@ def retrieve_last_line(file_path):
             f.seek(-2, os.SEEK_END)
             while f.read(1) != b'\n':
                 f.seek(-2, os.SEEK_CUR)
-                print(f.tell())
         except OSError:
             f.seek(0)
         return f.readline().decode().strip()
@@ -130,9 +132,16 @@ def map_transactions():
     try:
         with open(path, "r") as file:
             data = json.load(file)
-        address_mappper = {}
-        for hash in data:
-            response = requests.get(f"{API_URL}transaction?order_by=id&order_direction=asc&hash={hash}&with_events=1&with_event_data=1")
+        address_mappper,last_hash=  load_progress()
+        end = math.floor(len(data)/4)
+     
+        try:
+            last_hash_index = data.index(last_hash,0,end)
+        except ValueError:
+            last_hash_index = 0
+
+        for hash in range(last_hash_index,end):
+            response = requests.get(f"{API_URL}transaction?order_by=id&order_direction=asc&hash={data[hash]}&with_events=1&with_event_data=1")
             response.raise_for_status()  # Raise HTTPError for bad responses (4xx or 5xx)
             transaction_data = response.json()
             # Check if the response contains the expected structure
@@ -156,17 +165,20 @@ def map_transactions():
         # Save the address mapper to a file
         snippets.check_and_create_directory(FOLDER)
         with open(FOLDER + "address_mapper.json", 'w') as outfile:
-            json.dump(address_mappper, outfile, indent=4)
+            save_progress(data[hash], address_mappper)
     except FileNotFoundError:
         print(f"Error: File '{path}' not found.")
     except json.JSONDecodeError as e:
         print(f"Error decoding JSON from file '{path}': {e}")
+        save_progress(data[hash], address_mappper)
     except requests.exceptions.RequestException as e:
-        print(f"Request failed for hash {hash}: {e}")
+        print(f"Request failed for hash {data[hash]}: {e}")
+        save_progress(data[hash], address_mappper)
     except (KeyError, TypeError) as e:
-        print(f"Error processing transaction {hash}: {e}") #Catching errors related to missing keys
+        print(f"Error processing transaction {data[hash]}: {e}") #Catching errors related to missing keys
     except Exception as e:
-        print(f"An unexpected error occurred while processing transaction {hash}: {e}")
+        print(f"An unexpected error occurred while processing transaction {data[hash]}: {e}")
+        save_progress(data[hash], address_mappper)
 
 """
     Imports the transaction data from a given file and puts it into a list
@@ -204,6 +216,7 @@ def filter_transaction_data():
 
 if __name__ == "__main__":
     #filter_transaction_data()
-    #map_transactions()
-    print(retrieve_last_line(os.getcwd() + "/allAddress.txt"))
+    map_transactions()
+
+
 
