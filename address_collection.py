@@ -98,6 +98,39 @@ def mastersCount(data):
     print("Successfully fetched and saved data to stakeMasters.json")
 
 
+
+def get_tranasaction_count(address,chainInput):
+
+    try:
+        response = requests.get(f"{RPC_URL[0]}/GetAddressTransactionCount?account={address}&chainInput={chainInput}")
+        if response.status_code == 200:
+            data = response.json()
+            return data
+        else:
+            response.raise_for_status()
+            print(f"Error: {response.status_code}")
+    except requests.exceptions.RequestException as e:
+        print(f"Request failed: {e}")
+    return None
+
+def balance_rework():
+     
+    with open(FOLDER+"soulBalances.json", "r") as infile:
+        try:
+            data = json.load(infile)
+            new_format ={}
+            for item in data:
+                new_format[item['address']] = {
+                    "balance": item["balance"],
+                    "transactionCount": item["transactionCount"]
+                }
+        except json.JSONDecodeError as e:
+            print(f"Error decoding JSON: {e}")
+            exit(1)
+    with open(FOLDER+"soulBalances.json", "w") as outfile:
+        json.dump(new_format, outfile, indent=4)
+      
+
 def SoulBalances(data):
     """
     Organizes the soul balances of addresses in a JSON file and saves them to a new file.
@@ -106,27 +139,27 @@ def SoulBalances(data):
         data (json): The nested JSON data containing address information.
     """
 
-    soul_balances = []
+    soul_balances = {}
     try:
         for item in data["addresses"]:
+            count = get_tranasaction_count(item['address'], CHAIN)
             amount = None
             for balance in item['balances']:
                 if balance["token"]["symbol"] == "SOUL" and balance["chain"]["chain_name"] == "main":
                     amount = float(balance["amount"]) + float(item["stake"])
             if amount:  
-                soul_balances.append({
-                    "address": item['address'],
-                    "balance": amount})
+                soul_balances[item['address']]= {
+                    "balance": amount,
+                    "transactionCount":count}
             else:
                 print(f"SOUL balance not found for address: {item['address']}")
-                soul_balances.append({
-                    "address": item['address'],
-                    "balance": float(item['stake'])})
+                soul_balances[item['address']] = {
+                    "balance": float(item['stake']),
+                    "transactionCount": count}
+            
         if soul_balances:
             with open(FOLDER+"soulBalances.json", "w") as f:
-                # Save with indentation for readability)
-                json.dump(sorted(soul_balances, key=lambda x: x["balance"])[
-                        ::-1], f, indent=4)
+                json.dump(soul_balances, f, indent=4)
     except KeyError as e:
         print(f"KeyError: {e} - Check if the JSON structure has changed.")
     
@@ -171,6 +204,7 @@ def update_all():
 
 
 if __name__ == "__main__":
+   
     snippets.check_and_create_directory(FOLDER)
     for validator in VALIDATOR_KIND:
         count = get_address_count(validator, 1)
