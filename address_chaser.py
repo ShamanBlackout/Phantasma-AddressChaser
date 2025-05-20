@@ -7,40 +7,33 @@ import snippets
 
 
 RPC_URL,API_URL = snippets.load_config()
+DIR = os.getcwd() 
 
 
-def get_tranasaction_count(address,chainInput):
-
-    try:
-        response = requests.get(f"{RPC_URL[0]}/GetAddressTransactionCount?account={address}&chainInput={chainInput}")
-        if response.status_code == 200:
-            data = response.json()
-            return data
-        else:
-            response.raise_for_status()
-            print(f"Error: {response.status_code}")
-    except requests.exceptions.RequestException as e:
-        print(f"Request failed: {e}")
-    return 
 
 def get_transactions(address,transcactionCount):
     
     pageSize = 100 #default page size
     page = math.ceil(transcactionCount/pageSize) #amount of pages to be requested
     transactions = [] #list to store transactions
-    for i in range(page):
+    if transcactionCount == 0 or None:
+        print(f"No transactions found for address {address}.")
+        return
+    for i in range(1,page+1):
         try:
-            response = requests.get(f"{RPC_URL[0]}/GetAddressTransactions?account={address}&page={page}&pageSize={pageSize}")
+            response = requests.get(f"{RPC_URL[0]}/GetAddressTransactions?account={address}&page={i}&pageSize={pageSize}")
             response.raise_for_status()  # Raise an error for bad responses
             if response.status_code == 200:
                 data = response.json()
-                transactions.extend(data['result']['txs'])
+                transactions.extend( x["hash"] for x in data['result']['txs']for i in x["events"] if i["kind"] == "TokenSend")
             else:
                 print(f"Error: {response.status_code}")
         except requests.exceptions.RequestException as e:
             print(f"Request failed: {e}")
+            return
         time.sleep(0.1)  # Add a delay to avoid rate limiting
-    return transactions 
+    with open(DIR+f"/AddressTransactions/{address}.json", "w") as outfile:
+        json.dump({address:transactions}, outfile, indent=4)
 
 def get_transaction_details(hash):
 
@@ -71,39 +64,24 @@ def get_and_store_all_address_transaction():
     Only fetches the transactions that are of kind "TokenSend".
     """
     
-    snippets.check_and_create_directory(os.getcwd()+"/AddressTransactions/")
+    snippets.check_and_create_directory(DIR+"/AddressTransactions/")
     
-    path = os.getcwd()+"/AddressCollection/soulBalances.json"
+    path = DIR+"/AddressCollection/soulBalances.json"
     try:
         with open(path, "r") as infile:
             data = json.load(infile)
             if not data:
                 print(f"{path} is empty.")
             else:
-                for x in data:
-                    count = get_tranasaction_count(x["address"],"main")
-                    transactions = get_transactions(x["address"],count) if count else None
-                    if transactions:
-                        filtered_transactions = {
-                            "address": x["address"],
-                            "transactionCount": count,
-                            "hash": [x["hash"] for x in transactions for i in x["events"] if i["kind"] == "TokenSend"],
-                        }
-
-                        with open(os.getcwd()+f"/AddressTransactions/{x['address']}.json", "w") as outfile:
-                            json.dump(filtered_transactions, outfile, indent=4)
-                        print(f"Transactions for {x['address']} updated in {x['address']}.json")
-                    else:
-                        print(f"No transactions found for {x['address']}")
+                for address in data:
+                    count = data[address]["transactionCount"] if data[address]["transactionCount"]!= 0 else None
+                    get_transactions(address,count)       
     except FileNotFoundError:
         print(f"Error: File '{path}' not found.")
         exit(1)
     except json.JSONDecodeError as e:
         print(f"Error decoding JSON from file '{path}': {e}")
         exit(1)
-    except Exception as e:
-            print(f"Error processing transactions: {e}")
-
    
                 
 
@@ -126,4 +104,8 @@ def get_and_update_address(*addresses):
         print(f"Request failed: {e}")
 
 if __name__ == "__main__":
-    get_and_store_all_address_transaction()
+    addy = "P2KKQBFNmxyD3vWMFFiV15m8w2bLgDBi4JQKm4b7wT8gxi7"
+    with open(DIR+"/AddressCollection/soulBalances.json", "r") as infile:
+        data = json.load(infile)
+        count = data[addy]["transactionCount"]
+        get_transactions(addy,count)
