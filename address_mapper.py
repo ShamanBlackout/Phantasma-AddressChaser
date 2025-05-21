@@ -6,7 +6,9 @@ import math
 import snippets
 
 # Constants
-FOLDER = os.getcwd() + "/Mappings/"
+DIR = os.getcwd()
+FOLDER = DIR+ "/Mappings/"
+FETCH_PATH = DIR+ "/AddressTransactions/"
 RPC_URL,API_URL = snippets.load_config()
 
 
@@ -50,11 +52,9 @@ def update_address_map(address_mappper,tokenSend,tokenReceive,amount,timestamp):
     else:
         address_mappper[tokenReceive][tokenSend]["received"] += amount
         address_mappper[tokenReceive][tokenSend]["receivedTimeStamp"].append(timestamp) 
-
-    print(f"Updated address mapper: {address_mappper[tokenSend]}\n")
     return address_mappper
 
-def save_progress(hash, address_mapper):
+def save_progress(address, address_mapper):
     """
     Saves the progress of the address mapper to a file.
 
@@ -63,11 +63,9 @@ def save_progress(hash, address_mapper):
         address_mapper (dict): The address mapper to save.
     """
     snippets.check_and_create_directory(FOLDER)
-    with open(FOLDER + "address_mapper.json", 'w') as outfile:
+    with open(FOLDER +address+".json", 'w') as outfile:
         json.dump(address_mapper, outfile, indent=4)
-    print(f"Progress saved for hash: {hash}")
-    with open(FOLDER + "save_point.txt", 'a') as outfile:
-        outfile.write(f"{hash}\n")
+ 
 
 def load_progress():
     """
@@ -118,7 +116,7 @@ def retrieve_last_line(file_path):
 """
     Fucntion to get transaction details from a given transaction hash
  """    
-def map_transactions():
+def map_transactions(address):
     """
         Gets transaction details from a given transaction hash and updates the address mapper.
 
@@ -128,20 +126,13 @@ def map_transactions():
         Returns:
             dict: The updated address mapper.
     """
-    path = os.getcwd() +"/AddressTransactions/filteredTransactions.json"
+    path = DIR +"/AddressTransactions/"+address+".json"
+    with open(path, "r") as file:
+        data = json.load(file)
     try:
-        with open(path, "r") as file:
-            data = json.load(file)
-        address_mappper,last_hash=  load_progress()
-        end = math.floor(len(data)/4)
-     
-        try:
-            last_hash_index = data.index(last_hash,0,end)
-        except ValueError:
-            last_hash_index = 0
-
-        for hash in range(last_hash_index,end):
-            response = requests.get(f"{API_URL}transaction?order_by=id&order_direction=asc&hash={data[hash]}&with_events=1&with_event_data=1")
+        address_mappper = {}
+        for hash in data[address]:
+            response = requests.get(f"{API_URL}transaction?order_by=id&order_direction=asc&hash={hash}&with_events=1&with_event_data=1")
             response.raise_for_status()  # Raise HTTPError for bad responses (4xx or 5xx)
             transaction_data = response.json()
             # Check if the response contains the expected structure
@@ -157,28 +148,20 @@ def map_transactions():
                                 amount = float(event["token_event"]["value"])  # Extract amount from TokenSend event
                             if event["event_kind"] == "TokenReceive":
                                 tokenReceive = event["address"]
-                if tokenSend and tokenReceive:
-                    address_mappper = update_address_map(address_mappper, tokenSend, tokenReceive, amount,timestamp)  
+                    if tokenSend and tokenReceive:
+                        address_mappper = update_address_map(address_mappper, tokenSend, tokenReceive, amount,timestamp)  
         
             time.sleep(0.1)  # Add a delay to avoid rate limiting
-
         # Save the address mapper to a file
-        snippets.check_and_create_directory(FOLDER)
-        with open(FOLDER + "address_mapper.json", 'w') as outfile:
-            save_progress(data[hash], address_mappper)
-    except FileNotFoundError:
-        print(f"Error: File '{path}' not found.")
+        save_progress(address, address_mappper)
+    except KeyError as e:
+        print(f"Key Error: Key '{address}' not found:{e}")
+        exit(1)
     except json.JSONDecodeError as e:
         print(f"Error decoding JSON from file '{path}': {e}")
-        save_progress(data[hash], address_mappper)
     except requests.exceptions.RequestException as e:
-        print(f"Request failed for hash {data[hash]}: {e}")
-        save_progress(data[hash], address_mappper)
-    except (KeyError, TypeError) as e:
-        print(f"Error processing transaction {data[hash]}: {e}") #Catching errors related to missing keys
-    except Exception as e:
-        print(f"An unexpected error occurred while processing transaction {data[hash]}: {e}")
-        save_progress(data[hash], address_mappper)
+        print(f"Request failed for hash {address}: {e}")
+
 
 """
     Imports the transaction data from a given file and puts it into a list
@@ -186,37 +169,9 @@ def map_transactions():
     - Will not be needed as transaction data will be checked per block and not per file
      This is a quick and dirt solution , will be improved in the future.
     """
-def filter_transaction_data():
-    path = os.getcwd()+"/AddressTransactions/"
-    transaction_data = []
-    with os.scandir(path) as entries:
-        for entry in entries:
-            if entry.is_file() and entry.name.endswith('.json'):
-                try:
-                    with open(entry.path, 'r') as file:
-                        data = json.load(file)
-                        # Check if the data is a dictionary
-                        if not isinstance(data,dict):
-                            continue
-                        for transaction in data["hash"]:
-                            if transaction not in transaction_data:
-                                transaction_data.append(transaction)
-                except json.JSONDecodeError as e:
-                    print(f"Error decoding JSON from file {entry.name}: {e}")
-                except FileNotFoundError as e:
-                    print(f"File not found: {e}")
-                except Exception as e:
-                    print(f"An error occurred while processing file {entry.name}: {e}")
-
-    with open(path + "filteredTransactions.json", 'w') as outfile:
-        json.dump(transaction_data, outfile, indent=4)
-
-
-
-
 if __name__ == "__main__":
-    #filter_transaction_data()
-    map_transactions()
+    address = "P2KKQBFNmxyD3vWMFFiV15m8w2bLgDBi4JQKm4b7wT8gxi7"
+    map_transactions(address) 
 
 
 

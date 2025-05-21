@@ -2,10 +2,11 @@ import json
 import networkx as nx
 import matplotlib.pyplot as plt
 import os
-FOLDER = os.getcwd() + "/Mappings/"
+
+FETCH_FOLDER = os.getcwd() + "/Mappings/"
 
 
-def load_mapper(filename):
+def load_mapper(address):
     """
     Loads the address mapper from a JSON file.
 
@@ -15,17 +16,11 @@ def load_mapper(filename):
     Returns:
         dict: The loaded address mapper.
     """
-    try:
-        with open(FOLDER+filename, "r") as file:
-            address_mapper = json.load(file)
-            return address_mapper
-    except FileNotFoundError:
-        print(f"File '{filename}' not found. Returning empty address mapper.")
-        exit(1)
-    except json.JSONDecodeError as e:
-        print(f"Error decoding JSON from file '{filename}': {e}")
-        exit(1)
-
+    filename = address+".json"
+    with open(FETCH_FOLDER+filename, "r") as file:
+        address_mapper = json.load(file)
+        return address_mapper
+    
 def create_graph(address_mapper):
     """
     Creates a directed graph from the address mapper.
@@ -51,15 +46,14 @@ def create_graph(address_mapper):
 
 if __name__ == "__main__":
     # Load the address mapper from a file
-    address_mapper = load_mapper("address_mapper.json")
-
+    address = "P2KKQBFNmxyD3vWMFFiV15m8w2bLgDBi4JQKm4b7wT8gxi7"
+    address_mapper = load_mapper(address)
     # Create a graph from the address mapper
     G = create_graph(address_mapper)
-
     # Draw the graph
     pos = nx.spring_layout(G)
-    nx.draw(G, pos, with_labels=True, node_size=50,node_color="red", font_size=1, font_weight="bold")
+    nx.draw(G, pos, with_labels=False, node_size=50,node_color="red")
     edge_labels = nx.get_edge_attributes(G, "weight")
-    nx.draw_networkx_edge_labels(G, pos, edge_labels=edge_labels, font_size=5, font_color="black",alpha=0.5)
+    #nx.draw_networkx_edge_labels(G, pos, edge_labels=edge_labels, font_size=5, font_color="black",alpha=0.5)
     plt.title("Address Mapper Graph")
     plt.show()
