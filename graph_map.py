@@ -2,6 +2,7 @@ import json
 import networkx as nx
 import matplotlib.pyplot as plt
 import os
+import math
 
 FETCH_FOLDER = os.getcwd() + "/Mappings/"
 
@@ -20,7 +21,23 @@ def load_mapper(address):
     with open(FETCH_FOLDER+filename, "r") as file:
         address_mapper = json.load(file)
         return address_mapper
+
+def shorten_address(address):
+    """
+    Shortens the address to a more manageable format.
+
+    Args:
+        address (str): The address to shorten.
+
+    Returns:
+        str: The shortened address.
+    """
+    if len(address) > 10:
+        return address[:5] + "..." + address[-5:]
+    else:
+        return address
     
+
 def create_graph(address_mapper):
     """
     Creates a directed graph from the address mapper.
@@ -31,17 +48,13 @@ def create_graph(address_mapper):
     Returns:
         networkx.Graph: The directed graph representation of the address mapper.
     """
-    G = nx.MultiDiGraph()
+    G = nx.DiGraph()
+    node_list = [shorten_address(address) for address in address_mapper.keys()]
+    G.add_nodes_from(node_list)
     for tokenSend, tokenReceive in address_mapper.items():
         for tokenReceive, data in tokenReceive.items():
-            if tokenSend not in G:
-                G.add_node(tokenSend)
-            if tokenReceive not in G:
-                G.add_node(tokenReceive)
-            if data["sent"] >0:
-                G.add_edge(tokenSend, tokenReceive, weight=data["sent"])
-            if data["received"] >0:
-                G.add_edge(tokenReceive, tokenSend, weight=data["received"])
+            if round(data["sent"],1) > 0:
+                G.add_edge(shorten_address(tokenSend), shorten_address(tokenReceive), weight=round(data["sent"],1))
     return G
 
 if __name__ == "__main__":
@@ -50,10 +63,9 @@ if __name__ == "__main__":
     address_mapper = load_mapper(address)
     # Create a graph from the address mapper
     G = create_graph(address_mapper)
-    # Draw the graph
-    pos = nx.spring_layout(G)
-    nx.draw(G, pos, with_labels=False, node_size=50,node_color="red")
+    pos = nx.shell_layout(G)
+    nx.draw(G, pos, with_labels=True, node_size=50,font_size=10, node_color="red")
     edge_labels = nx.get_edge_attributes(G, "weight")
-    #nx.draw_networkx_edge_labels(G, pos, edge_labels=edge_labels, font_size=5, font_color="black",alpha=0.5)
+    nx.draw_networkx_edge_labels(G, pos, edge_labels=edge_labels, font_size=10, font_color="black",alpha=0.5)
     plt.title("Address Mapper Graph")
     plt.show()
