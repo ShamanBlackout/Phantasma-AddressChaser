@@ -3,6 +3,27 @@ import json
 
 CONFIG_PATH = os.getcwd() + "/config.json"
 
+
+def retrieve_last_line(file_path):
+    """
+    Retrieves the last line from a file.
+
+    Args:
+        file_path (str): The path to the file.
+
+    Returns:
+        str: The last line of the file.
+    """
+    with open(file_path, 'rb') as f:
+        try:
+            f.seek(-2, os.SEEK_END)
+            while f.read(1) != b'\n':
+                f.seek(-2, os.SEEK_CUR)
+        except OSError:
+            f.seek(0)
+        return f.readline().decode().strip()
+
+
 def load_config():
     """
     Loads the configuration from the config.json file.

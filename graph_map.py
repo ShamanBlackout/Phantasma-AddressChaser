@@ -2,9 +2,11 @@ import json
 import networkx as nx
 import matplotlib.pyplot as plt
 import os
-import math
+import pandas as pd
+
 
 FETCH_FOLDER = os.getcwd() + "/Mappings/"
+CSV_DATA = os.getcwd() + "/CsvFiles/"
 
 
 def load_mapper(address):
@@ -36,7 +38,27 @@ def shorten_address(address):
         return address[:5] + "..." + address[-5:]
     else:
         return address
-    
+
+def convert_to_csv(type,data):
+    if type not in ["NODES", "EDGES"]:
+        raise ValueError("Type must be either 'NODES' or 'EDGES'")
+
+
+    match type:
+        case "NODES":
+            print ("Converting Nodes to CSV")
+            dict = {"address": data}
+            df = pd.DataFrame(dict)
+            df.to_csv(CSV_DATA+'AddressNodes.csv', index=False)
+        case "EDGES":
+            df2 = pd.DataFrame(data, columns=["from", "to", "weight"])  
+            df2.to_csv(CSV_DATA+'AddressEdges.csv', index=False)
+
+            print ("Converting Edges to CSV")   
+
+
+
+
 
 def create_graph(address_mapper):
     """
@@ -49,23 +71,30 @@ def create_graph(address_mapper):
         networkx.Graph: The directed graph representation of the address mapper.
     """
     G = nx.DiGraph()
-    node_list = [shorten_address(address) for address in address_mapper.keys()]
+    #node_list = [shorten_address(address) for address in address_mapper.keys()]
+    node_list =  address_mapper.keys()
+    edge_list = []
     G.add_nodes_from(node_list)
     for tokenSend, tokenReceive in address_mapper.items():
         for tokenReceive, data in tokenReceive.items():
             if round(data["sent"],1) > 0:
-                G.add_edge(shorten_address(tokenSend), shorten_address(tokenReceive), weight=round(data["sent"],1))
-    return G
+                G.add_edge(tokenSend, tokenReceive, weight=round(data["sent"],1))
+                edge_list.append((tokenSend, tokenReceive, round(data["sent"],1)))  
+    return G,edge_list
 
 if __name__ == "__main__":
     # Load the address mapper from a file
     address = "P2KKQBFNmxyD3vWMFFiV15m8w2bLgDBi4JQKm4b7wT8gxi7"
     address_mapper = load_mapper(address)
-    # Create a graph from the address mapper
-    G = create_graph(address_mapper)
-    pos = nx.shell_layout(G)
-    nx.draw(G, pos, with_labels=True, node_size=50,font_size=10, node_color="red")
-    edge_labels = nx.get_edge_attributes(G, "weight")
-    nx.draw_networkx_edge_labels(G, pos, edge_labels=edge_labels, font_size=10, font_color="black",alpha=0.5)
-    plt.title("Address Mapper Graph")
-    plt.show()
+
+
+    G,edge_list = create_graph(address_mapper)
+    
+    convert_to_csv("NODES",G.nodes)
+    convert_to_csv("EDGES",edge_list)
+    #pos = nx.circular_layout(G)
+    #nx.draw(G, pos, with_labels=True, node_size=50,font_size=10, node_color="red")
+    #edge_labels = nx.get_edge_attributes(G, "weight")
+    #nx.draw_networkx_edge_labels(G, pos, edge_labels=edge_labels, font_size=10, font_color="black",alpha=0.5)
+    #plt.title("Address Mapper Graph")
+    #plt.show()
