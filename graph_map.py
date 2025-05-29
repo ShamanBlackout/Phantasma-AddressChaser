@@ -84,7 +84,7 @@ def create_graph(address_mapper):
 
 if __name__ == "__main__":
     # Load the address mapper from a file
-    address = "P2KKQBFNmxyD3vWMFFiV15m8w2bLgDBi4JQKm4b7wT8gxi7"
+    address = "P2K6Ymuv5tCuz9DJD2GtcRXKDo5sAeKdinYDC71gWzXZe5t"
     address_mapper = load_mapper(address)
 
 

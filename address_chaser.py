@@ -104,7 +104,7 @@ def get_and_update_address(*addresses):
         print(f"Request failed: {e}")
 
 if __name__ == "__main__":
-    addy = "P2KKQBFNmxyD3vWMFFiV15m8w2bLgDBi4JQKm4b7wT8gxi7"
+    addy = "P2K6Ymuv5tCuz9DJD2GtcRXKDo5sAeKdinYDC71gWzXZe5t"
     with open(DIR+"/AddressCollection/soulBalances.json", "r") as infile:
         data = json.load(infile)
         count = data[addy]["transactionCount"]
