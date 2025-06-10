@@ -32,7 +32,7 @@ def update_address_map(address_mappper,tokenSend,tokenReceive,amount,timestamp):
     if tokenReceive not in address_mappper[tokenSend]:
         address_mappper[tokenSend][tokenReceive] ={
             "sent": amount,
-            "received": 0,
+            #received": 0,
             "sentTimeStamp":[timestamp],
             "receivedTimeStamp":[]
         } 
@@ -40,6 +40,7 @@ def update_address_map(address_mappper,tokenSend,tokenReceive,amount,timestamp):
         address_mappper[tokenSend][tokenReceive]["sent"] += amount
         address_mappper[tokenSend][tokenReceive]["sentTimeStamp"].append(timestamp)
     # Update the reverse mapping for tokenReceive
+    #Will need this for graph map nodes creation
     if tokenReceive not in address_mappper:
         address_mappper[tokenReceive] = {}
     if tokenSend not in address_mappper[tokenReceive]:
@@ -52,6 +53,7 @@ def update_address_map(address_mappper,tokenSend,tokenReceive,amount,timestamp):
     else:
         address_mappper[tokenReceive][tokenSend]["received"] += amount
         address_mappper[tokenReceive][tokenSend]["receivedTimeStamp"].append(timestamp) 
+      
     return address_mappper
 
 def save_progress(address, address_mapper):
@@ -149,7 +151,7 @@ def map_transactions(address):
      This is a quick and dirt solution , will be improved in the future.
     """
 if __name__ == "__main__":
-    address = "P2K6Ymuv5tCuz9DJD2GtcRXKDo5sAeKdinYDC71gWzXZe5t"
+    address = "P2KDFxeeHNXsofabZmQ4L7d9B7n2Cm4S62GQsMqscGCJcnZ"
     map_transactions(address) 
 
 
