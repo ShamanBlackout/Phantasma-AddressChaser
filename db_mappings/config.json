@@ -1,0 +1,20 @@
+{
+  "rpc_url": [
+    "https://pharpc1.phantasma.info/api/v1",
+    "https://pharpc2.phantasma.info/api/v1",
+    "https://pharpc3.phantasma.info/api/v1"
+  ],
+  "api_url": "https://api-explorer.phantasma.info/api/v1/",
+  "db_connection": "mongodb://localhost:27017/",
+  "db_name": "phantasma",
+  "db_collections": {
+    "block": "block",
+    "transactions": "transactions",
+    "addresses": "addresses"
+  },
+  "logging": {
+    "path": "db_mappings\\logs",
+    "enabled": true,
+    "max_size": 10485760
+  }
+}
