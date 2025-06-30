@@ -57,6 +57,10 @@ def check_and_create_directory(folder):
     else:
         print(f"Directory '{folder}' already exists.")
 
+
+
+
+
 def create_weekly_folder(folder_path):
     """
     Creates a weekly folder based on the current date.
@@ -67,3 +71,15 @@ def create_weekly_folder(folder_path):
     folder_name = f"week_{week_number}_{year}"
     path = os.path.join(folder_path, folder_name)
     check_and_create_directory(path)
+
+def save_logs(folder_path,log_data):
+    """
+    Creates a daily file based on the current date.
+    """
+    current_date = datetime.now()
+    date_string = current_date.strftime("%Y-%m-%d")
+    file_name = f"{date_string}.log"
+    path = os.path.join(folder_path, file_name)
+    create_weekly_folder(folder_path)
+    with open(path, "a") as file:
+        json.dump(log_data, file, indent=4)  

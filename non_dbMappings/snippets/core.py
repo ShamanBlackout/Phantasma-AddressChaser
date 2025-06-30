@@ -1,7 +1,7 @@
 import os
 import json
-
-CONFIG_PATH = os.getcwd() + "/config.json"
+from pathlib import Path
+CWD = Path(__file__).parent.absolute()  # Ensure the current directory is set correctly
 
 
 def retrieve_last_line(file_path):
@@ -24,19 +24,19 @@ def retrieve_last_line(file_path):
         return f.readline().decode().strip()
 
 
-def load_config():
+def load_config(path):
     """
     Loads the configuration from the config.json file.
     """
     try:
-        with open("config.json", "r") as config_file:
+        with open(path, "r") as config_file:
             config = json.load(config_file)
             return config["rpc_url"], config["api_url"] 
     except FileNotFoundError:
-        print(f"Error: File '{CONFIG_PATH}' not found.")
+        print(f"Error: File '{path}' not found.")
         exit(1)
     except json.JSONDecodeError as e:
-        print(f"Error decoding JSON from file '{CONFIG_PATH}': {e}")
+        print(f"Error decoding JSON from file '{path}': {e}")
         exit(1)
 
 

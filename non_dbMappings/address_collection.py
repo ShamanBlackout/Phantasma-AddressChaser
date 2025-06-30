@@ -10,15 +10,16 @@ import time
 import threading
 import os
 import snippets
-
+from pathlib import Path
+CWD = Path(__file__).parent.absolute()  # Ensure the current directory is set correctly
 OFFSET = "0"
 CHAIN = "main"
 ORDER_BY = ("id", "address", "address_name")
 ORDER_DIRECTION = ("asc", "desc")
 VALIDATOR_KIND = ["Invalid", "Primary", "Secondary", "Proposed"]
 SHOW_ALL = ('0', '1') # used for with_storage, with_stakes, with_balance, with_total , 0 for false, 1 for true
-FOLDER = os.getcwd() +"/AddressCollection/"  # folder to save the json files
-RPC_URL,API_URL = snippets.load_config()
+FOLDER = os.path.join(CWD,"AddressCollection/")  # folder to save the json files
+RPC_URL,API_URL = snippets.load_config(os.path.join(CWD,"config.json"))  # Load RPC and API URLs from config.json
 
 
 
@@ -204,7 +205,7 @@ def update_all():
 
 
 if __name__ == "__main__":
-   
+
     snippets.check_and_create_directory(FOLDER)
     for validator in VALIDATOR_KIND:
         count = get_address_count(validator, 1)
