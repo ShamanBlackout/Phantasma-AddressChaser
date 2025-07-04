@@ -17,7 +17,44 @@ API = config["api_url"]
 LOG_DATA = []
 LOG_PATH = config["logging"]["path"]
 
-
+def create_database(name):
+    """
+    Create a MongoDB database and return the database object.
+    """
+    LOG_DATA.append(f"Creating database connection: {CONN}")
+    try:
+        client = MongoClient(CONN)
+        if not client:
+            raise Exception("Failed to connect to the database. Please check your connection string.")
+        db = client[name]
+        LOG_DATA.append(f"Database created: {db.name}")
+        return db
+    except Exception as e:
+        LOG_DATA.append(f"Error creating database: {e}")
+        return None
+    
+def create_collection(db, collection_name):
+    """
+    Create a collection in the database.
+    
+    Args:
+        db: The database object.
+        collection_name (str): The name of the collection to create.
+    
+    Returns:
+        The created collection object or None if the creation failed.
+    """
+    if db is not None:
+        try:
+            collection = db[collection_name]
+            LOG_DATA.append(f"Collection {collection_name} created in database {db.name}.")
+            return collection
+        except Exception as e:
+            LOG_DATA.append(f"Error creating collection {collection_name}: {e}")
+            return None
+    else:
+        LOG_DATA.append("Database connection is None. Cannot create collection.")
+        return None
 
 
 def get_database():
